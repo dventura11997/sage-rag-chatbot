@@ -1,0 +1,374 @@
+#Start-up: 
+# cd "C:\Users\BD335SR\OneDrive - EY\Documents\DanielVentura\Engagements\MSFT GEN AI\genai-chatbot-asset"
+# env/scripts/activate
+# Python rag_model_msft.py
+# Document set source: https://www.australiansuper.com/tools-and-advice/forms-and-fact-sheets
+# Langchain dependencies: tiktoken, langchain-community
+
+import json
+import os
+from pypdf import PdfReader
+from openai import AzureOpenAI  
+import pandas as pd
+from azure.storage.blob import BlobServiceClient
+import io
+
+
+ 
+#Function to read pdf files: - LOCAL FILES
+# def extract_pdf_data(pdf_path):
+#     with open(pdf_path, 'rb') as file:
+#         pdf_reader = PdfReader(file)
+#         metadata = pdf_reader.metadata
+#         num_pages = len(pdf_reader.pages)
+#         print(metadata.title)
+
+#         # Extract text from all pages
+#         text = ''
+#         for page in pdf_reader.pages:
+#             text += page.extract_text()  # Call extract_text() as a function
+
+#         return {
+#             "title": metadata.title,
+#             "text": text,
+#             "author": metadata.author,
+#             "creator": metadata.creator,
+#             "producer": metadata.producer,
+#             "subject": metadata.subject,
+#             "creation_date": metadata.get('/CreationDate'),
+#             "modification_date": metadata.get('/ModDate'),
+#             "keywords": metadata.get('/Keywords'),
+#             "num_pages": num_pages,
+#         }
+
+# Function to read PDF files - AZURE VERSION
+def extract_pdf_data(pdf_file):
+    pdf_reader = PdfReader(pdf_file)
+    metadata = pdf_reader.metadata
+    num_pages = len(pdf_reader.pages)
+    
+    print(metadata.title)  # Print the title for debugging
+
+    # Extract text from all pages
+    text = ''
+    for page in pdf_reader.pages:
+        text += page.extract_text()  # Call extract_text() as a function
+
+    return {
+        "title": metadata.title,
+        "text": text,
+        "author": metadata.author,
+        "creator": metadata.creator,
+        "producer": metadata.producer,
+        "subject": metadata.subject,
+        "creation_date": metadata.get('/CreationDate'),
+        "modification_date": metadata.get('/ModDate'),
+        "keywords": metadata.get('/Keywords'),
+        "num_pages": num_pages,
+    }
+
+
+
+pdf_metadata_list = []
+
+def extract_data_multiple_pdfs(pdf_folder_path):
+    # Initialize a list to hold the metadata
+    pdf_metadata_list = []
+
+    # Connect to Azure Blob Storage
+    connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+    print(connect_str)
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+    
+    # Get the container client
+    container_name = 'kaipdfdocs'  # Replace with your actual container name
+    container_client = blob_service_client.get_container_client(container_name)
+
+    # List blobs in the container
+    blob_list = container_client.list_blobs()
+    print(blob_list)
+
+    for blob in blob_list:
+        if blob.name.endswith('.pdf'):
+            print(blob.name)  # Print the blob name for debugging
+            # Download the blob content
+            blob_client = container_client.get_blob_client(blob)
+            pdf_data = blob_client.download_blob().readall()
+
+            # Use io.BytesIO to read the PDF data
+            pdf_metadata = extract_pdf_data(io.BytesIO(pdf_data))
+            pdf_metadata_list.append(pdf_metadata)
+
+    # Create a DataFrame from the metadata list
+    pdf_metadata_df = pd.DataFrame(pdf_metadata_list)
+    
+
+    return pdf_metadata_df
+
+# Loop through all PDF files in the specified folder - WORKS FOR LOCAL URLs
+# def extract_data_multiple_pdfs(pdf_folder_path):
+
+#     #pdf_folder_path = r"C:\Users\BD335SR\OneDrive - EY\Documents\DanielVentura\Engagements\MSFT GEN AI\genai-chatbot-asset\rag-backend\pdf_docs"
+#     # workspaces folder path
+#     #pdf_folder_path = "/workspaces/genai-chatbot-asset/rag-backend/pdf_docs"
+#     print(pdf_folder_path)
+    
+#     for filename in os.listdir(pdf_folder_path):
+#         if filename.endswith('.pdf'):
+#             print(individual_pdf_path)
+#             individual_pdf_path = os.path.join(pdf_folder_path, filename)
+#             print(individual_pdf_path)
+#             #Extract the metadata information from each pdf
+#             pdf_metadata = extract_pdf_data(individual_pdf_path)
+#             pdf_metadata_list.append(pdf_metadata)
+          
+#     pdf_metadata_df = pd.DataFrame(pdf_metadata_list)
+
+#     return pdf_metadata_df
+
+
+endpoint = "https://eysandboxaiage3756863402.openai.azure.com"  
+deployment = "gpt-4" 
+subscription_key = os.getenv("AZURE_OPENAI_API_KEY", "7lmroNwNGxQlbUmFQQjfQQDg5JhiDAIIzJ2oDQPyJ43OV4JzqpPKJQQJ99BBACYeBjFXJ3w3AAAAACOGIZcr") 
+
+
+# Initialize Azure OpenAI Service client with key-based authentication    
+client = AzureOpenAI(  
+    azure_endpoint=endpoint,  
+    api_key=subscription_key,  
+    api_version="2024-05-01-preview",
+)
+
+# Function to generate PDF summaries
+def generate_pdf_summaries(pdf_folder_path):
+    #pdf_folder_path = r"C:\Users\BD335SR\OneDrive - EY\Documents\DanielVentura\Engagements\MSFT GEN AI\genai-chatbot-asset\rag-backend\pdf_docs"
+    # workspaces folder path
+    #pdf_folder_path = "/workspaces/genai-chatbot-asset/rag-backend/pdf_docs"
+    #Run function to extract data from pdfs
+    extract_data_multiple_pdfs(pdf_folder_path)
+
+    for pdf_metadata in pdf_metadata_list:
+        
+        # Prepare the chat prompt
+        chat_prompt = [
+            {"role": "user", "content": f"Can you please provide a concise summary of the following text:\n\n{pdf_metadata['text']}"}
+        ]
+        print(f"Processing summary with unchunked prompt for {pdf_metadata['title']}")
+        # Include speech result if speech is enabled  
+        messages = chat_prompt  
+        
+        # Generate the completion  
+        completion = client.chat.completions.create(  
+            model=deployment,
+            messages=messages,
+            max_tokens=800,  
+            temperature=0.7,  
+            top_p=0.95,  
+            frequency_penalty=0,  
+            presence_penalty=0,
+            stop=None,  
+            stream=False
+        )
+        
+        #print(completion.to_json())
+        response = json.loads(completion.to_json())
+        #print(response)
+        # Extract the summary from the completion response
+        summary = response['choices'][0]['message']['content']
+        #print(summary)
+        pdf_metadata['summary'] = summary  # Add the summary to the metadata
+    
+    # Optionally convert the list to a DataFrame
+    #pdf_metadata_df = pd.DataFrame(pdf_metadata_list)
+
+    pdf_meta_sum = pdf_metadata_df[['title', 'summary']]
+    # Print the DataFrame or save it to a file
+    print(pdf_meta_sum)
+    #pdf_meta_sum.to_csv(f"C:\Users\BD335SR\OneDrive - EY\Documents\DanielVentura\Engagements\MSFT GEN AI\genai-chatbot-asset\pdf_metadata_df.csv", index=False)
+
+    #return pdf_metadata_df
+
+
+def select_relevant_pdfs(query, pdf_meta_sum):
+    # Prepare the chat prompt
+    chat_prompt = []
+
+    # Iterate over each row in the dataframe to get the specific summary and title
+    for index, row in pdf_meta_sum.iterrows():
+        summary = row['summary']
+        title = row['title']
+        chat_prompt.append({"role": "user", "content": f"Summary: {summary}\nTitle: {title}"})
+
+    # Add the user query to the prompt
+    chat_prompt.append({"role": "user", "content": f"Based on the above summaries, which titles are relevant to the user query: {query}? \nPlease return the response as a JSON object in the following format:\n{{\n\"relevant_pdfs\": [\"pdf_document_name1\", \"pdf_document_name2\"]\n"})
+    messages = chat_prompt 
+    print(f"Selecting the relevant documents based on the summary")
+        
+    # Generate the completion  
+    completion = client.chat.completions.create(  
+        model=deployment,
+        messages=messages,
+        max_tokens=800,  
+        temperature=0.7,  
+        top_p=0.95,  
+        frequency_penalty=0,  
+        presence_penalty=0,
+        stop=None,  
+        stream=False
+    )
+        
+    #print(completion.to_json())
+    response = json.loads(completion.to_json())
+    #print(response)
+    # Extract the summary from the completion response
+    relevant_pdfs = response['choices'][0]['message']['content']
+    #print(relevant_pdfs)
+        
+    return relevant_pdfs
+
+def generate_contextual_paragraph(company):
+    # Prepare the chat prompt
+    chat_prompt = [
+        {"role": "user", "content": f"""Create a 4-6 line paragraph which is designed to provide context on a particular business, in this address the following questions for this business: {client}: 
+        What is the nature of the {company}? 
+        What are the products and services being sold, as well as the mix for {company}?
+        How long has the {company} existed, which industry, sector and geographical market do they operate within? 
+        what is the management team's track record for delivering financial results and managing growth?
+        What are the key resources with the company?"""}
+    ]
+
+    messages = chat_prompt  
+            
+    # Generate the completion  
+    completion = client.chat.completions.create(  
+        model=deployment,
+        messages=messages,
+        max_tokens=800,  
+        temperature=0.7,  
+        top_p=0.95,  
+        frequency_penalty=0,  
+        presence_penalty=0,
+        stop=None,  
+        stream=False
+    )
+    print(f"Generating contextual paragraph for {company}")
+
+    response = json.loads(completion.to_json())
+    contextual_paragraph = response['choices'][0]['message']['content']
+
+    # print(completion.to_json())
+    #print(contextual_paragraph)
+
+    return contextual_paragraph
+
+
+
+def query_response(query, company, pdf_meta_sum, pdf_metadata_df):
+    #pdf_folder_path = r"C:\Users\BD335SR\OneDrive - EY\Documents\DanielVentura\Engagements\MSFT GEN AI\genai-chatbot-asset\rag-backend\pdf_docs"
+    # workspaces folder path
+    # pdf_folder_path = "/workspaces/genai-chatbot-asset/rag-backend/pdf_docs"
+
+    # Call the functions to generate dataframes
+    #df_metadata_df = extract_data_multiple_pdfs(pdf_folder_path)
+    #pdf_meta_sum = pd.read_csv("C:\Users\BD335SR\OneDrive - EY\Documents\DanielVentura\Engagements\MSFT GEN AI\genai-chatbot-asset\pdf_metadata_df.csv")
+    
+    context = generate_contextual_paragraph(company)
+    print(context)
+    #select_relevant_pdfs(query, pdf_meta_sum)
+
+    json_response = select_relevant_pdfs(query, pdf_meta_sum)
+    print(json_response)
+    
+    # Ensure json_response is a dictionary
+    if isinstance(json_response, str):
+        json_response = json.loads(json_response)
+    #print(json_response)
+
+    # Extract the list of relevant PDF titles from the json_response
+    relevant_pdf_titles = json_response.get("relevant_pdfs", [])
+    print(f"Relevant PDFs: {relevant_pdf_titles}")
+
+    # Merge the two DataFrames on the 'title' column
+    merged_df = pd.merge(pdf_metadata_df, pdf_meta_sum[['title', 'summary']], on='title', how='inner')
+
+    # Filter the merged DataFrame to find relevant entries
+    relevant_df = merged_df[merged_df['title'].isin(relevant_pdf_titles)]
+
+    # Prepare the chat prompt
+    chat_prompt = [
+        {"role": "user", "content": f"""Please create a concise and relevant 3-4 sentence response to the user query: "{query}". 
+         Use the following context about the company: {context} and the relevant documents.
+         Ensure the response is directly related to the query and does not include unnecessary information.
+         Ensure the response is textual with full sentences.
+         Do not respond to the query as if its an email with any sign-off, title or email signature.
+         Please ensure there are no forward or backslashes in the response. Or any new line syntax (such as "\\n" or "\\n1")."""}
+    ]
+
+    for index, row in relevant_df.iterrows():
+        summary = row['summary']
+        title = row['title']
+        text = row['text']
+        chat_prompt.append({"role": "user", "content": f"Summary: {summary}\nTitle: {title}, Text: {text}"})
+
+
+
+    print(f"Responding to user query using: {relevant_pdf_titles} and {context}")
+    # Include speech result if speech is enabled  
+    messages = chat_prompt  
+            
+    # Generate the completion  
+    completion = client.chat.completions.create(  
+        model=deployment,
+        messages=messages,
+        max_tokens=800,  
+        temperature=0.7,  
+        top_p=0.95,  
+        frequency_penalty=0,  
+        presence_penalty=0,
+        stop=None,  
+        stream=False
+    )
+
+    json_response = json.loads(completion.to_json())
+    query_response = json_response['choices'][0]['message']['content'] 
+
+    query_response = query_response.replace('\n', ' ').replace('\\n', ' ').strip()
+    # Convert the list to a comma-separated string
+    formatted_relevant_pdf_titles = ', '.join(relevant_pdf_titles)
+
+    print(query_response)
+    return query_response, formatted_relevant_pdf_titles
+
+#Function here for vector store set-up, leverage it to search
+# Function to store DataFrame in ChromaDB
+# def store_dataframe_in_chroma(pdf_metadata_df):
+#     # Initialize the embeddings model
+#     embeddings = OpenAIEmbeddings(openai_api_key=subscription_key)
+
+#     # Create a Chroma vector store
+#     vector_store = Chroma(embedding_function=embeddings)
+
+#     # Iterate through the DataFrame and add each summary to the vector store
+#     for index, row in pdf_metadata_df.iterrows():
+#         title = row['title']
+#         summary = row['summary']
+        
+#         # Add the title and summary to the vector store
+#         vector_store.add_texts(texts=[summary], metadatas=[{"title": title}])
+
+#     print("DataFrame stored in ChromaDB successfully.")
+
+# Define variables:
+
+#pdf_folder_path = r"C:\Users\BD335SR\OneDrive - EY\Documents\DanielVentura\Engagements\MSFT GEN AI\genai-chatbot-asset\rag-backend\pdf_docs"
+# workspaces folder path
+#pdf_folder_path = "/workspaces/genai-chatbot-asset/rag-backend/pdf_docs"
+
+#open_ai_api_key = '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'
+# query = 'How do I change my Super to AusSuper?'
+# company = 'Australian Super'
+#generate_pdf_summaries()
+# pdf_metadata_df = extract_data_multiple_pdfs(pdf_folder_path)
+# pdf_meta_sum = pd.read_csv("pdf_metadata_df.csv")
+# query_response(query, company, pdf_meta_sum, pdf_metadata_df)
+#generate_contextual_paragraph(company)
