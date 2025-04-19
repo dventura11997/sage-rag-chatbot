@@ -4,7 +4,6 @@
 # Python server.py
 
 from flask import Flask, request, jsonify
-#from azure.storage.blob import BlobServiceClient
 import os
 from flask_cors import CORS
 from functions import *
@@ -20,33 +19,25 @@ def send_email():
 
     return jsonify({"message": f"Test: {test}"}), 200
 
-# @app.route('/metadata', methods=['GET'])
-# def gen_pdf_metadata():
-#     pdf_metadata_df = generate_pdf_summaries()
+@app.route('/metadata', methods=['GET'])
+def gen_pdf_metadata():
+    #pdf_metadata_df = generate_pdf_summaries()
+    # Get pdf_metadata_df with text from each pdf
+    # container_name = 'sage-pdf-docs'  
+    # storage_acct_name = 'devprojectsdb'
+    # pdf_folder_path = f"https://{storage_acct_name}.blob.core.windows.net/{container_name}/"
 
-#     return jsonify({"message": f"PDF metadata generated"}), 200
+    pdf_metadata_df = ProcessPDFs.extract_data_multiple_pdfs()
+    print(pdf_metadata_df.head())
 
-# @app.route('/azure', methods=['GET'])
-# def test_connection():
-#     # Connect to Azure
-#     connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
-#     print(f"Connection String: {connect_str}")  # Debugging line
+    return jsonify({"message": f"PDF metadata generated"}), 200
 
-#     # Create the BlobServiceClient object
-#     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+@app.route('/azure', methods=['GET'])
+def test_connection():
+    ProcessPDFs.ConnectAzure() 
+    message = "Returned blob list in console"
 
-#     # Specify the container name
-#     container_name = 'kaipdfdocs'  # Replace with your actual container name
-#     container_client = blob_service_client.get_container_client(container_name)
-
-#     # List the blobs in the container
-#     blob_list = container_client.list_blobs()
-#     for blob in blob_list:
-#         print("\t" + blob.name)
-
-#     message = "Returned blob list in console"
-
-#     return jsonify({"message": f"{message}"}), 200
+    return jsonify({"message": f"{message}"}), 200
 
 # @app.route('/query_response', methods=['POST'])
 # def gen_query_response():
