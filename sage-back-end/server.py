@@ -19,6 +19,13 @@ def send_email():
 
     return jsonify({"message": f"Test: {test}"}), 200
 
+@app.route('/azure', methods=['GET'])
+def test_connection():
+    ProcessPDFs.ConnectAzure() 
+    message = "Returned blob list in console"
+
+    return jsonify({"message": f"{message}"}), 200
+
 @app.route('/metadata', methods=['GET'])
 def gen_pdf_metadata():
     pdf_metadata_df = ProcessPDFs.extract_data_multiple_pdfs()
@@ -28,12 +35,19 @@ def gen_pdf_metadata():
 
     return jsonify({"message": f"PDF metadata generated in storage account"}), 200
 
-@app.route('/azure', methods=['GET'])
-def test_connection():
-    ProcessPDFs.ConnectAzure() 
-    message = "Returned blob list in console"
+@app.route('/helpers', methods=['POST'])
+def response_helpers():
+    request_body = request.json
+    # Get query parameters from JSON Body
+    # query = request_body.get('query')
+    # relevant_pdfs = ResponseHelpers.select_relevant_pdfs(query)
 
-    return jsonify({"message": f"{message}"}), 200
+    company = request_body.get('company')
+    contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
+
+    
+
+    return jsonify(contextual_paragraph), 200
 
 # @app.route('/query_response', methods=['POST'])
 # def gen_query_response():
