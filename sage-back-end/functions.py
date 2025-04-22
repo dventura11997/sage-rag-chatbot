@@ -6,6 +6,7 @@ from azure.storage.blob import BlobServiceClient
 from sentence_transformers import SentenceTransformer
 from io import StringIO
 import faiss
+import openai
 import pickle
 
 class ProcessPDFs:
@@ -92,7 +93,9 @@ class ProcessPDFs:
     def generate_pdf_summaries(pdf_metadata_df):
         pdf_metadata_df = ProcessPDFs.extract_data_multiple_pdfs()
         for idx, row in pdf_metadata_df.iterrows():
-            
+            # Initialize the OpenAI client (you can also set OPENAI_API_KEY in env vars)
+            client = openai.OpenAI(api_key="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")
+
             # Prepare the chat prompt
             chat_prompt = [
                 {"role": "user", "content": f"Can you please provide a concise summary of the following text:\n\n{row['text']}"}
@@ -104,7 +107,7 @@ class ProcessPDFs:
             
             # Generate the completion  
             completion = client.chat.completions.create(  
-                model=deployment,
+                model="gpt-3.5",
                 messages=messages,
                 max_tokens=800,  
                 temperature=0.7,  
@@ -135,7 +138,7 @@ class ProcessPDFs:
             csv_data = csv_buffer.getvalue()
 
             # Connect and upload
-            blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+            blob_service_client = BlobServiceClient.from_connection_string(connect_str)
             blob_client = blob_service_client.get_blob_client(container=container_name, blob=file_name)
 
             blob_client.upload_blob(csv_data, overwrite=True)

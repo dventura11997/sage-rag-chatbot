@@ -30,7 +30,7 @@ def gen_pdf_metadata():
     pdf_metadata_df = ProcessPDFs.generate_pdf_summaries(pdf_metadata_df)
     print(pdf_metadata_df.head())
 
-    return jsonify({"message": f"PDF metadata generated"}), 200
+    return jsonify({"message": f"PDF metadata generated in storage account"}), 200
 
 @app.route('/azure', methods=['GET'])
 def test_connection():
