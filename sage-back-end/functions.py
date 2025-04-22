@@ -4,6 +4,7 @@ import pandas as pd
 from PyPDF2 import PdfReader
 from azure.storage.blob import BlobServiceClient
 from sentence_transformers import SentenceTransformer
+from io import StringIO
 import faiss
 import pickle
 
@@ -121,6 +122,23 @@ class ProcessPDFs:
             summary = response['choices'][0]['message']['content']
             #print(summary)
             pdf_metadata_df.at[idx, 'summary'] = summary
+
+            # Save the file to a storage container
+            container_name = 'sage-pdf-docs'  
+            storage_acct_name = 'devprojectsdb'
+            file_name = 'pdf_metadata_df.csv'
+            connect_str = "DefaultEndpointsProtocol=https;AccountName=devprojectsdb;AccountKey=vl7x6XrnS8Esycm9fFsXO/biKfHRyKWRXYuI9WcRb1r1xiMlRUQcipmsvUruJu3K5VHY1NjMbdyi+ASt1FaEhA==;EndpointSuffix=core.windows.net"
+
+            # Convert DataFrame to CSV in memory
+            csv_buffer = StringIO()
+            pdf_metadata_df.to_csv(csv_buffer, index=False)
+            csv_data = csv_buffer.getvalue()
+
+            # Connect and upload
+            blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob=file_name)
+
+            blob_client.upload_blob(csv_data, overwrite=True)
     
     
         return pdf_metadata_df

@@ -27,7 +27,7 @@ def gen_pdf_metadata():
     # storage_acct_name = 'devprojectsdb'
     # pdf_folder_path = f"https://{storage_acct_name}.blob.core.windows.net/{container_name}/"
 
-    pdf_metadata_df = ProcessPDFs.extract_data_multiple_pdfs()
+    pdf_metadata_df = ProcessPDFs.generate_pdf_summaries(pdf_metadata_df)
     print(pdf_metadata_df.head())
 
     return jsonify({"message": f"PDF metadata generated"}), 200
