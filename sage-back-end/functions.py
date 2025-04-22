@@ -1,9 +1,13 @@
 import os
+import json
 import io
 import pandas as pd
 from PyPDF2 import PdfReader
 from azure.storage.blob import BlobServiceClient
 from sentence_transformers import SentenceTransformer
+import tiktoken
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings.openai import OpenAIEmbeddings
 from io import StringIO
 import faiss
 import openai
@@ -35,7 +39,7 @@ class ProcessPDFs:
         metadata = pdf_reader.metadata
         num_pages = len(pdf_reader.pages)
         
-        print(metadata.title)  # Print the title for debugging
+        #print(metadata.title)  # Print the title for debugging
 
         # Extract text from all pages
         text = ''
@@ -70,11 +74,11 @@ class ProcessPDFs:
 
         # List blobs in the container
         blob_list = container_client.list_blobs()
-        print(blob_list)
+        #print(blob_list)
 
         for blob in blob_list:
             if blob.name.endswith('.pdf'):
-                print(blob.name)  # Print the blob name for debugging
+                print(f"Processing metadata for blob: {blob.name}")  # Print the blob name for debugging
                 # Download the blob content
                 blob_client = container_client.get_blob_client(blob)
                 pdf_data = blob_client.download_blob().readall()
@@ -88,60 +92,98 @@ class ProcessPDFs:
         
 
         return pdf_metadata_df
+
+
+    def generate_chunks(text: str, chunk_size: int = 10000, chunk_overlap: int = 200):
+        """Chunk the text to stay within the token limit for OpenAI models."""
+
+        # Initialize the tiktoken encoder for the correct model
+        encoder = tiktoken.get_encoding("cl100k_base")  # Use the same encoding as OpenAI's model
+        # Define the separators and chunking behavior
+        separators = ["\n\n", "\n", " ", ""]
+        
+        # Initialize the RecursiveCharacterTextSplitter
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=separators,
+            length_function=lambda text: len(encoder.encode(text))  # Token count function using tiktoken
+        )
+        
+        # Split the text into chunks
+        chunks = text_splitter.split_text(text)
+        return chunks
     
     # Function to generate PDF summaries
     def generate_pdf_summaries(pdf_metadata_df):
-        pdf_metadata_df = ProcessPDFs.extract_data_multiple_pdfs()
+        # Initialize the OpenAI client (you can also set OPENAI_API_KEY in env vars)
+        client = openai.OpenAI(api_key="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")
+
         for idx, row in pdf_metadata_df.iterrows():
-            # Initialize the OpenAI client (you can also set OPENAI_API_KEY in env vars)
-            client = openai.OpenAI(api_key="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")
-
-            # Prepare the chat prompt
-            chat_prompt = [
-                {"role": "user", "content": f"Can you please provide a concise summary of the following text:\n\n{row['text']}"}
-            ]
-
-            print(f"Processing summary with unchunked prompt for {row['title']}")
-            # Include speech result if speech is enabled  
-            messages = chat_prompt  
             
-            # Generate the completion  
-            completion = client.chat.completions.create(  
-                model="gpt-3.5",
-                messages=messages,
-                max_tokens=800,  
-                temperature=0.7,  
-                top_p=0.95,  
-                frequency_penalty=0,  
-                presence_penalty=0,
-                stop=None,  
-                stream=False
-            )
+
+            # Generate chunks for the current row's text
+            chunks = ProcessPDFs.generate_chunks(row['text'])
+        
+            # Initialize a list to collect summaries for all chunks
+            summaries = []
+
+            for chunk in chunks:
+                # Prepare the chat prompt
+                chat_prompt = [
+                    {"role": "user", "content": f"Can you please provide a concise summary of the following text:\n\n{chunk}"}
+                ]
+
+                print(f"Processing summary with unchunked prompt for {row['title']}")
+                # Include speech result if speech is enabled  
+                messages = chat_prompt  
+                
+                # Generate the completion  
+                completion = client.chat.completions.create(  
+                    model="gpt-3.5-turbo",
+                    messages=messages,
+                    max_tokens=800,  
+                    temperature=0.7,  
+                    top_p=0.95,  
+                    frequency_penalty=0,  
+                    presence_penalty=0,
+                    stop=None,  
+                    stream=False
+                )
+                
+                #print(completion.to_json())
+                response = json.loads(completion.to_json())
+                #print(response)
+                # Extract the summary from the completion response
+                summary = response['choices'][0]['message']['content']
+                summaries.append(summary)
             
-            #print(completion.to_json())
-            response = json.loads(completion.to_json())
-            #print(response)
-            # Extract the summary from the completion response
-            summary = response['choices'][0]['message']['content']
-            #print(summary)
-            pdf_metadata_df.at[idx, 'summary'] = summary
+            # Combine all chunk summaries
+            full_summary = " ".join(summaries)
+            print(full_summary)
+        
+            # Store the final summary in the DataFrame
+            pdf_metadata_df.at[idx, 'summary'] = full_summary
 
-            # Save the file to a storage container
-            container_name = 'sage-pdf-docs'  
-            storage_acct_name = 'devprojectsdb'
-            file_name = 'pdf_metadata_df.csv'
-            connect_str = "DefaultEndpointsProtocol=https;AccountName=devprojectsdb;AccountKey=vl7x6XrnS8Esycm9fFsXO/biKfHRyKWRXYuI9WcRb1r1xiMlRUQcipmsvUruJu3K5VHY1NjMbdyi+ASt1FaEhA==;EndpointSuffix=core.windows.net"
+        print(pdf_metadata_df.head())
+        pdf_metadata_df.drop(['text'], axis=1, inplace=True)
 
-            # Convert DataFrame to CSV in memory
-            csv_buffer = StringIO()
-            pdf_metadata_df.to_csv(csv_buffer, index=False)
-            csv_data = csv_buffer.getvalue()
+        # Save the file to a storage container
+        container_name = 'sage-pdf-docs'  
+        storage_acct_name = 'devprojectsdb'
+        file_name = 'pdf_metadata_df.csv'
+        connect_str = "DefaultEndpointsProtocol=https;AccountName=devprojectsdb;AccountKey=vl7x6XrnS8Esycm9fFsXO/biKfHRyKWRXYuI9WcRb1r1xiMlRUQcipmsvUruJu3K5VHY1NjMbdyi+ASt1FaEhA==;EndpointSuffix=core.windows.net"
 
-            # Connect and upload
-            blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob=file_name)
+        # Convert DataFrame to CSV in memory
+        csv_buffer = StringIO()
+        pdf_metadata_df.to_csv(csv_buffer, index=False)
+        csv_data = csv_buffer.getvalue()
 
-            blob_client.upload_blob(csv_data, overwrite=True)
+        # Connect and upload
+        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=file_name)
+
+        blob_client.upload_blob(csv_data, overwrite=True)
     
     
         return pdf_metadata_df

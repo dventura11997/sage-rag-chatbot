@@ -21,14 +21,10 @@ def send_email():
 
 @app.route('/metadata', methods=['GET'])
 def gen_pdf_metadata():
-    #pdf_metadata_df = generate_pdf_summaries()
-    # Get pdf_metadata_df with text from each pdf
-    # container_name = 'sage-pdf-docs'  
-    # storage_acct_name = 'devprojectsdb'
-    # pdf_folder_path = f"https://{storage_acct_name}.blob.core.windows.net/{container_name}/"
+    pdf_metadata_df = ProcessPDFs.extract_data_multiple_pdfs()
 
-    pdf_metadata_df = ProcessPDFs.generate_pdf_summaries(pdf_metadata_df)
-    print(pdf_metadata_df.head())
+    ProcessPDFs.generate_pdf_summaries(pdf_metadata_df)
+    
 
     return jsonify({"message": f"PDF metadata generated in storage account"}), 200
 
