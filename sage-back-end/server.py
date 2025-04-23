@@ -58,12 +58,12 @@ def gen_query_response():
 
         # Get query parameters from JSON Body
         query = request_body.get('query')
-        #company = request_body.get('company')
+        company = request_body.get('company')
 
 
-        response, formatted_relevant_pdf_titles = query_response(query, company, pdf_meta_sum, pdf_metadata_df)
+        response, relevant_titles = QueryResponse.query_response(query, company)
 
-        return jsonify({"message": f"{response}", "relevant_documents": f"Referenced documents: {formatted_relevant_pdf_titles}"}), 200
+        return jsonify({"message": f"{response}", "relevant_documents": f"{relevant_titles}"}), 200
     
     except Exception as e:
         # Catch all unexpected errors

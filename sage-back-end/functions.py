@@ -314,46 +314,51 @@ class ResponseHelpers:
         return contextual_paragraph
 
 class QueryResponse:
-    def query_response(query, company, pdf_meta_sum, pdf_metadata_df):
+    def query_response(query, company):
         client = openai.OpenAI(api_key="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")
 
         contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
         print(contextual_paragraph)
         #select_relevant_pdfs(query, pdf_meta_sum)
 
-        relevant_pdf_titles = ResponseHelpers.select_relevant_pdfs(query, pdf_meta_sum)
-        print(json_response)
+        # Load FAISS index and metadata
+        index = faiss.read_index("faiss_index")
+        with open("faiss_metadata.pkl", "rb") as f:
+            metadata = pickle.load(f)
         
-        # Ensure json_response is a dictionary
-        if isinstance(json_response, str):
-            json_response = json.loads(json_response)
-        #print(json_response)
+        # Load sentence transformer model for encoding query
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+        query_embedding = model.encode([query])[0].reshape(1, -1)
+        
+        # Search for top 3 similar documents
+        k = 3
+        distances, indices = index.search(query_embedding, k)
+        
+        # Get relevant document information
+        relevant_docs = []
+        relevant_titles = []
+        for idx in indices[0]:
+            if idx < len(metadata):
+                doc_info = metadata[idx]
+                relevant_docs.append(doc_info)
+                relevant_titles.append(doc_info.get('title', ''))
+        
+        print(f"Relevant document: {relevant_titles}")
 
-        # Extract the list of relevant PDF titles from the json_response
-        relevant_pdf_titles = json_response.get("relevant_pdfs", [])
-        print(f"Relevant PDFs: {relevant_pdf_titles}")
-
-        # Logic to get text from documents to use for response
-
-        # Prepare the chat prompt
+        # Prepare chat prompt with context
         chat_prompt = [
-            {"role": "user", "content": f"""Please create a concise and relevant 3-4 sentence response to the user query: "{query}". 
-            Use the following context about the company: {contextual_paragraph} and the relevant documents.
-            Ensure the response is directly related to the query and does not include unnecessary information.
-            Ensure the response is textual with full sentences.
-            Do not respond to the query as if its an email with any sign-off, title or email signature.
-            Please ensure there are no forward or backslashes in the response. Or any new line syntax (such as "\\n" or "\\n1")."""}
+            {"role": "user", "content": f"""Create a concise 3-4 sentence response to: "{query}". 
+            Use this context about {company}: {contextual_paragraph}
+            
+            Relevant document information:
+            {json.dumps(relevant_docs, indent=2)}
+            
+            Keep response direct and in full sentences without email formatting.
+            """}
         ]
 
-        for index, row in relevant_df.iterrows():
-            summary = row['summary']
-            title = row['title']
-            text = row['text']
-            chat_prompt.append({"role": "user", "content": f"Summary: {summary}\nTitle: {title}, Text: {text}"})
 
-
-
-        print(f"Responding to user query using: {relevant_pdf_titles} and {context}")
+        print(f"Responding to user query using {contextual_paragraph}")
         # Include speech result if speech is enabled  
         messages = chat_prompt  
                 
@@ -370,13 +375,8 @@ class QueryResponse:
             stream=False
         )
 
-        json_response = json.loads(completion.to_json())
-        query_response = json_response['choices'][0]['message']['content'] 
+        response = json.loads(completion.model_dump_json())
+        query_response = response['choices'][0]['message']['content'].replace('\n', ' ').strip()
 
-        query_response = query_response.replace('\n', ' ').replace('\\n', ' ').strip()
-        # Convert the list to a comma-separated string
-        formatted_relevant_pdf_titles = ', '.join(relevant_pdf_titles)
-
-        print(query_response)
-
-        return query_response, formatted_relevant_pdf_titles
+    
+        return query_response, relevant_titles
