@@ -41,13 +41,9 @@ def gen_pdf_metadata():
 def response_helpers():
     request_body = request.json
     # Get query parameters from JSON Body
-    # query = request_body.get('query')
-    # relevant_pdfs = ResponseHelpers.select_relevant_pdfs(query)
-
     company = request_body.get('company')
-    contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
 
-    
+    contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)   
 
     return jsonify(contextual_paragraph), 200
 
