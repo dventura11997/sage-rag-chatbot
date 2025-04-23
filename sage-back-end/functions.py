@@ -188,12 +188,12 @@ class ProcessPDFs:
     
         return pdf_metadata_df
     
-    def store_to_vector_store(df, index_path="faiss_index", metadata_path="faiss_metadata.pkl"):
+    def store_to_vector_store(pdf_metadata_df, index_path="faiss_index", metadata_path="faiss_metadata.pkl"):
         # Load model
         model = SentenceTransformer("all-MiniLM-L6-v2")
 
         # Get text column and encode
-        texts = df["text"].fillna("").tolist()
+        texts = pdf_metadata_df["text"].fillna("").tolist()
         embeddings = model.encode(texts, convert_to_numpy=True)
 
         # Create FAISS index
@@ -205,7 +205,7 @@ class ProcessPDFs:
         faiss.write_index(index, index_path)
 
         # Save metadata separately (e.g., title, author)
-        metadata = df.drop(columns=["text"]).to_dict(orient="records")
+        metadata = pdf_metadata_df.drop(columns=["text"]).to_dict(orient="records")
         with open(metadata_path, "wb") as f:
             pickle.dump(metadata, f)
 
@@ -312,3 +312,71 @@ class ResponseHelpers:
         #print(contextual_paragraph)
 
         return contextual_paragraph
+
+class QueryResponse:
+    def query_response(query, company, pdf_meta_sum, pdf_metadata_df):
+        client = openai.OpenAI(api_key="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")
+
+        contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
+        print(contextual_paragraph)
+        #select_relevant_pdfs(query, pdf_meta_sum)
+
+        relevant_pdf_titles = ResponseHelpers.select_relevant_pdfs(query, pdf_meta_sum)
+        print(json_response)
+        
+        # Ensure json_response is a dictionary
+        if isinstance(json_response, str):
+            json_response = json.loads(json_response)
+        #print(json_response)
+
+        # Extract the list of relevant PDF titles from the json_response
+        relevant_pdf_titles = json_response.get("relevant_pdfs", [])
+        print(f"Relevant PDFs: {relevant_pdf_titles}")
+
+        # Logic to get text from documents to use for response
+
+        # Prepare the chat prompt
+        chat_prompt = [
+            {"role": "user", "content": f"""Please create a concise and relevant 3-4 sentence response to the user query: "{query}". 
+            Use the following context about the company: {contextual_paragraph} and the relevant documents.
+            Ensure the response is directly related to the query and does not include unnecessary information.
+            Ensure the response is textual with full sentences.
+            Do not respond to the query as if its an email with any sign-off, title or email signature.
+            Please ensure there are no forward or backslashes in the response. Or any new line syntax (such as "\\n" or "\\n1")."""}
+        ]
+
+        for index, row in relevant_df.iterrows():
+            summary = row['summary']
+            title = row['title']
+            text = row['text']
+            chat_prompt.append({"role": "user", "content": f"Summary: {summary}\nTitle: {title}, Text: {text}"})
+
+
+
+        print(f"Responding to user query using: {relevant_pdf_titles} and {context}")
+        # Include speech result if speech is enabled  
+        messages = chat_prompt  
+                
+        # Generate the completion  
+        completion = client.chat.completions.create(  
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=800,  
+            temperature=0.7,  
+            top_p=0.95,  
+            frequency_penalty=0,  
+            presence_penalty=0,
+            stop=None,  
+            stream=False
+        )
+
+        json_response = json.loads(completion.to_json())
+        query_response = json_response['choices'][0]['message']['content'] 
+
+        query_response = query_response.replace('\n', ' ').replace('\\n', ' ').strip()
+        # Convert the list to a comma-separated string
+        formatted_relevant_pdf_titles = ', '.join(relevant_pdf_titles)
+
+        print(query_response)
+
+        return query_response, formatted_relevant_pdf_titles
