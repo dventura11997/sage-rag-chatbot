@@ -30,7 +30,7 @@ def test_connection():
 def gen_pdf_metadata():
     pdf_metadata_df = ProcessPDFs.extract_data_multiple_pdfs()
 
-    ProcessPDFs.generate_pdf_summaries(pdf_metadata_df)
+    #ProcessPDFs.generate_pdf_summaries(pdf_metadata_df)
     ProcessPDFs.store_to_vector_store(pdf_metadata_df, index_path="faiss_index", metadata_path="faiss_metadata.pkl")
 
     
