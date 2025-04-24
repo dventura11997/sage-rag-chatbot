@@ -251,7 +251,7 @@ class ResponseHelpers:
 
         return contextual_paragraph
 
-class QueryResponse:
+class ChatResponse:
     def query_response(query, company):
         client = openai.OpenAI(api_key="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")
 
@@ -281,7 +281,9 @@ class QueryResponse:
                 relevant_docs.append(doc_info)
                 relevant_titles.append(doc_info.get('title', ''))
         
-        print(f"Relevant document: {relevant_titles}")
+        print(f"Relevant documents: {relevant_titles}")
+        relevant_titles = ', '.join(relevant_titles)
+        print(f"Relevant documents for message: {relevant_titles}")
 
         # Prepare chat prompt with context
         chat_prompt = [

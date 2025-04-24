@@ -24,11 +24,11 @@ const ChatInput = () => {
             // Prepare the query body
             const requestBody = {
                 query: inputValue, // User's input
-                company: "Australian Super" // Static company name
+                company: "Commonwealth Bank of Australia" // Static company name
             };
 
             // Call the formSubmit utility function
-            const result = await chatSubmit('http://127.0.0.1:5000/query_response', requestBody);
+            const result = await chatSubmit('http://127.0.0.1:5000/chat_response', requestBody);
 
             if (result.success) {
                 // Add the chatbot's response to the messages array

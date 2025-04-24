@@ -14,8 +14,12 @@ app.secret_key = "hello"
 CORS(app)
 
 @app.route('/test', methods=['GET'])
-def send_email():
-    test = 'Hello world'
+def test():
+    relevant_titles = "['What does Public mean?', 'TSIA April 2025', 'Financial Services Guide']"
+
+    print(f"Relevant documents: {relevant_titles}")
+    relevant_titles = ', '.join(relevant_titles)
+    print(f"Relevant documents for message: {relevant_titles}")
 
     return jsonify({"message": f"Test: {test}"}), 200
 
@@ -47,7 +51,7 @@ def response_helpers():
 
     return jsonify(contextual_paragraph), 200
 
-@app.route('/query_response', methods=['POST'])
+@app.route('/chat_response', methods=['POST'])
 def gen_query_response():
     try:
         request_body = request.json
@@ -57,9 +61,9 @@ def gen_query_response():
         company = request_body.get('company')
 
 
-        response, relevant_titles = QueryResponse.query_response(query, company)
+        response, relevant_titles = ChatResponse.query_response(query, company)
 
-        return jsonify({"message": f"{response}", "relevant_documents": f"{relevant_titles}"}), 200
+        return jsonify({"message": f"{response}", "relevant_documents": f"Documents used for response: {relevant_titles}"}), 200
     
     except Exception as e:
         # Catch all unexpected errors
