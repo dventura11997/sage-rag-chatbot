@@ -1,46 +1,26 @@
-@import url('https://fonts.googleapis.com/css?family=Libre+Bodoni|Roboto|SF Pro Display|Noto Sans|Montserrat&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Libre+Bodoni|Roboto|SF Pro Display|Noto Sans|Open Sans|Montserrat&display=swap');
 
 :root {
-  --primary-col-as: #D93F02;
-  --secondary-col-as: #E9E5EC;
-  --tercery-col-as: #607DBA;
-  --white: #ffffff;
-  --coffee: #382110;
-  --cream: #f9f8f4;
-  --main-font: 'SF Pro Display';
-  --header-font: 'Roboto';
-}
+  --primary-col: #FF3B00;
+  --secondary-col: black;
+  --tercery-col: #F8F4F2;
+  --text-col: #726D6A;
+  --main-font: 'Open Sans';
+  --header-font: 'Open Sans';
 
-@font-face {
-  font-family: 'SF Pro Display'; /* Replace with your font name */
-  src: url('./assets/fonts/SFPRODISPLAYREGULAR.OTF') format('opentype'); /* Replace with your font file name */
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'SF Pro Display'; /* Main font family name */
-  src: url('./assets/fonts/SFPRODISPLAYMEDIUM.OTF') format('opentype'); /* Medium weight */
-  font-weight: 500; /* Medium weight */
-  font-style: normal; /* Normal style */
-}
-
-@font-face {
-  font-family: 'SF Pro Display'; /* Main font family name */
-  src: url('./assets/fonts/SFPRODISPLAYBOLD.OTF') format('opentype'); /* Bold weight */
-  font-weight: bold; /* Bold weight */
-  font-style: normal; /* Normal style */
 }
 
 body {
   margin: 0; /* Remove default margin */
+  background-color: var(--tercery-col);
 }
 
 .responsive-container {
   display: grid;
   grid-column-gap: 10px;
-  grid-template-columns: 250px 1fr 100px;
+  grid-template-columns: 100px 1fr 100px;
 }
+
 .left, .right {
   background-color: var(--white);
 }
@@ -49,331 +29,83 @@ body {
   background-color: var(--white);
 }
 
-.major-heading {
-  font-family: var(--header-font);
-  font-weight: 700;
-  color: black;
-  font-size: 40px;
-  padding: 30px;
-  text-align: left;
-  margin-bottom: 50px;
+.container {
+  padding: 400px 600px 400px 600px;
 }
 
-.sec-heading {
-  font-family: var(--header-font);
-  font-weight: 700;
-  color: black;
-  font-size: 40px;
-  padding: 30px;
-  text-align: left;
-}
-
-.landing-page{
-  position: relative;
-  display: flex;
-  flex-direction: column; /* Stack children vertically */
-  align-items: center; /* Center children horizontally */
-  justify-content: center; /* Center children vertically */
-  height: 100vh; /* Make the landing page full height */
-}
-
-.landing-page-container {
-  position: relative; /* Establish a positioning context for the form */
-  z-index: 0; /* Ensure it appears below the header block */
+.central {
   align-items: center;
   justify-content: center;
+  text-align: center;
+  gap: 30px
+}
+
+h1 {
+  color: black;
+  font-weight: 600;
+  font-size: 2.5rem;
+  text-align: center;
+  font-family: var(--header-font);
+  display: inline;
+  margin: 0 0.5rem;
+
+}
+
+.primary-colour {
+  color: var(--primary-col);
+  font-weight: 700;
+  font-style: italic;
+}
+
+.medium-text {
+  color: var(--text-col);
+  font-family: var(--main-font);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.primary-button {
+  display: flex;
+  align-items: center;  /* Vertically center both items */
+  justify-content: center;  /* Horizontally center */
+  background-color: white;
+  border-radius: 100px;
+  padding: 15px 20px 15px 20px;
+  gap: 10px;
+  box-shadow: 0 10px 30px 25% rgba(114, 109, 106, 1);
+  border: 0px;
+  font-family: var(--main-font);
+}
+
+.invert {
+  color: white;
+  background-color: var(--primary-col);
+}
+
+.full {
   width: 100%;
-  background-color: var(--secondary-col-as);
-  height: 345px;
-  /* padding-top: 100; */
-  margin-top: 180px;
+  font-size: 24px;
 }
 
-.lp-form {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding-left: 700px;
-  padding-right: 700px;
-  padding-top: 170px;
+.margin {
+  margin-top: 30px;
 }
-
-.lp-form-field {
-  border: none;
-  border-bottom: 1px solid var(--tercery-col-as);
-  font-family: var(--main-font);
-  background-color: var(--secondary-col-as);
-  padding: 7px;
-  font-weight: 500;
-  font-size: 16px;
-}
-
-.lp-form-field::placeholder {
-  font-family: var(--main-font);
-  font-weight: 500;
-  font-size: 16px;
-  color: black;
-}
-
-.lp-form-field:focus {
-  outline: none; /* Remove default outline */
-  border-bottom: 1px solid var(--tercery-col-as); /* Keep the bottom border */
-}
-
-.lp-header-block {
-  position: absolute; /* Allow it to overlap */
-  top: 30%; /* Adjust this value to position it vertically */
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Center the block */
-  text-align: center; /* Center text inside the header block */
-  z-index: 1; /* Ensure it appears above other content */
-  display: grid;
-  grid-template-columns: .5fr 1fr;
-  width: 500px;
-  align-items: center;
-}
-
 
 .logo {
-  width: 200px;
-}
-
-.chat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-
-.chat-container {
-  width: 100%;
-  padding: 10px;
-}
-
-.searchbar-container {
-  border-top: solid 1px var(--tercery-col-as);
-  display: flex; /* Use flexbox for layout */
-  align-items: center; /* Center items vertically */
-  margin-top: 10px; /* Space above the form */
-  position: fixed; /* Fix the position */
-  bottom: 0; /* Align to the bottom of the screen */
-  left: 0; /* Align to the left */
-  right: 0; 
-  background-color: white; /* Optional: Set a background color */
-  padding: 10px; /* Optional: Add some padding */
-  margin-left: 270px;
-  margin-right: 90px;
-  margin-bottom: 30px;
-}
-
-.chat-input-form {
-  display: flex; /* Use flexbox for layout */
-  align-items: center; /* Center items vertically */
-  margin-top: 10px; /* Space above the form */
-  width: 100%;
-}
-
-
-/* Styles for the input field */
-.chat-input {
-  flex: 1; /* Allow the input to take up available space */
-  padding: 20px; /* Add padding for better touch targets */
-  border: none; /* Light gray border */
-  font-size: 16px; /* Font size */
-  margin-right: 10px; /* Space between input and button */
-  outline: none;
-  text-align: left;
-  justify-items: top;
-  font-family: var(--main-font);
-}
-
-/* Styles for the send button */
-.button {
-  display: grid;
-  grid-template-columns: 1fr .25fr;
-  background-color: var(--primary-col-as); /* Bootstrap primary color */
-  align-items: center;
-  column-gap: 10px;
-  border: none; /* Remove default border */
-  border-radius: 4px; /* Rounded corners */
-  cursor: pointer; /* Pointer cursor on hover */
-  padding-top: 0; /* Remove default padding */
-  transition: background-color 0.3s; /* Smooth transition for hover effect */
-  padding-top: 5px;
-  padding-bottom: 5px;
-  align-self: right;
-}
-
-
-
-/* Hover effect for the send button */
-.button:hover {
-  opacity: 70%;
-}
-
-.button-text {
-  color: white; /* White text color */
-  font-family: var(--main-font);
-  font-size: 16px; /* Font size */
-  padding-left: 10px;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  margin: 0px;
-}
-
-.button-landing {
-  margin-top: 20px;
-  background-color: var(--primary-col-as); /* Bootstrap primary color */
-  color: white;
-  font-family: var(--main-font);
-  font-size: 22;
-  align-items: center;
-  border: none; /* Remove default border */
-  border-radius: 4px; /* Rounded corners */
-  cursor: pointer; /* Pointer cursor on hover */
-  padding-top: 0; /* Remove default padding */
-  transition: background-color 0.3s; /* Smooth transition for hover effect */
-  padding-top: 10px;
-  padding-bottom: 10px;
-}
-
-.chat-messages {
-  margin-bottom: 10px; /* Space between messages and input form */
-  align-items: right;
-  height: 75svh;
-  overflow-y: auto;
-}
-
-.chat-message {
-  background-color: var(--cream); /* Light gray background for messages */
-  padding: 8px; /* Padding for message */
-  border-radius: 8px; /* Rounded corners */
-  margin-bottom: 5px; /* Space between messages */
-  font-family: var(--main-font);
-}
-
-.messenger-role {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: left;
-  column-gap: 8px;
-  padding: 10px;
-}
-
-/* Styles for user messages */
-.user {
-  background-color: white; /* Blue background for user messages */
-  color: black; /* White text color */
-  text-align: left; /* Align user messages to the right */
-  padding-left: 20px;
-}
-
-/* Styles for bot messages */
-.bot {
-  background-color: var(--secondary-col-as); /* Light gray background for bot messages */
-  color: black; /* Black text color */
-  text-align: left;
-  padding-left: 20px;
-}
-
-.sidebar {
-  display: grid;
-  background-color: var(--secondary-col-as);
-  height: 100svh;
-  width: 250px;
-  grid-template-rows: auto 1fr auto;
-}
-
-.small {
-  width: 50px;
-}
-
-.sb-header-block {
-  text-align: center; /* Center text inside the header block */
-  display: grid;
-  grid-template-columns: .5fr 1fr;
-  width: 100px;
-  align-items: center;
-  padding: 10px;
-}
-
-.navlink {
-  text-decoration: none;
-  color: black;
-  padding: 10px;
-  font-family: var(--main-font);
-  font-weight: 500;
-  text-align: left;
-}
-
-.ch-hist {
-  font-weight: 700;
-  color: var(--primary-col-as);
-}
-
-.link-container {
-  display: flex;
-  flex-direction: column; /* Stack children vertically */
-  align-items: left; /* Center children horizontally */
-  justify-content: top; /* Center children vertically */
-}
-
-.link-container-grid {
-  display: grid;
-  grid-template-columns: .25fr 1fr;
-  justify-content: center;
-  align-items: center;
-  column-gap: 0px;
-}
-
-.icon-small {
+  height: 24px;
   width: 24px;
-  justify-self: end;
 }
 
-.icon-send {
-  width: 20px;
-  justify-self: right;
-  padding-right: 10px;
+.big {
+  height: 34px;
+  width: 60px;
 }
 
-.avatar-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: bottom;
-  column-gap: 20px;
-  margin-bottom: 20px;
-}
-
-.icon-med {
-  width: 42px;
-  align-self: center;
-  justify-self: center;
-}
-
-.av-side {
-  justify-self: right;
-}
-
-.avatar-details {
-  display: grid;
-  grid-template-rows: auto auto; /* Change from 1fr 1fr to auto auto */
-  row-gap: 2px; /* Add this line to control the vertical spacing */
-}
-
-.avatar-text-container {
+.navbar {
   display: flex;
-  align-items: flex-end; /* Aligns the text at the bottom */
-}
-
-.avatar-text {
-  font-family: var(--main-font);
-  font-size: 16px;
-  color: var(--primary-col-as);
-  font-size: 14px;
-  align-self: end;
-}
-
-.title {
-  color: black;
-  font-size: 14px;
-  align-self: top;
+  justify-content: space-between;  
+  align-items: center;  
+  padding: 20px;  
+  margin-left: 50px;
+  margin-right: 50px;
 }

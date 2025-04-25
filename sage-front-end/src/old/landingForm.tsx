@@ -1,10 +1,9 @@
 import '../App.css'
-import Redirect from './redirect';
+import Redirect from '../utils/redirect';
 import { useState } from 'react';
 
 interface RedirectState {
     page: any; // Define the type for the 'page' prop
-    state?: any; // Define the type for the 'state' prop (optional)
 }
 
 
@@ -13,7 +12,7 @@ export const LandingForm = () => {
 
     return (
         <div className='landing-page-container'>
-            {redirectTo && <Redirect page={redirectTo.page} state={redirectTo.state} />}
+            {redirectTo && <Redirect page={redirectTo.page} />}
             <form className='lp-form'>
                 <input className='lp-form-field' placeholder='Enter email ID'></input>
                 <button onClick={() => setRedirectTo({ page: 'chat' })} className='button-landing'>SSO Login</button>

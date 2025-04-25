@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import '../App.css';
-import Send from '../assets/send.png'
-import UserAvatar from '../assets/user-avatar.png'
-import AiAvatar from '../assets/ai-avatar.png'
-import chatSubmit from '../utils/chatSubmit';
+// import Send from '../assets/send.png'
+// import UserAvatar from '../assets/user-avatar.png'
+// import AiAvatar from '../assets/ai-avatar.png'
+// import chatSubmit from '../utils/chatSubmit';
 
 
 //React.FC stands for "React Functional Component." It is a type provided by the React library that defines the structure of a functional component.
