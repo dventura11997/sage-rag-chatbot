@@ -37,17 +37,18 @@ body {
 
 .sidebar-container {
   display: flex;
-  flex-direction: column;
-  gap: 30px;
-  justify-content: flex-start;
-  align-items: center;
-  padding: 50px 100px 10px 100px;
-  background-color: var(--fourth-col);
-  height: 100vh;
-  border-right: 1px solid #726D6A40;
-  position: fixed;
-  top: 0; /* Adjust to stick it to the top */
-  left: 0; /* Sticks to the left side */
+    flex-direction: column;
+    gap: 30px;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 50px 100px 10px 100px;
+    background-color: var(--fourth-col);
+    height: 100vh;
+    border-right: 1px solid #726D6A40;
+    /* Remove position: fixed, top, and left */
+    /* position: fixed; */
+    /* top: 0; */
+    /* left: 0; */
 }
 
 .chat-container {
@@ -56,6 +57,22 @@ body {
   flex-direction: column;
   gap: 30px;
   height: 90vh;
+}
+
+.info-container {
+  padding: 400px 200px 450px 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  height: auto;
+  position: relative;
+}
+
+.header-container {
+  display: flex; /* Use flex to ensure inline behavior */
+  justify-content: center; /* Center the content */
+  align-items: center; /* Vertically align the h1 elements */
+  flex-wrap: nowrap; /* Prevent wrapping */
 }
 
 .date-header-container {
@@ -71,6 +88,16 @@ body {
   flex-direction: column;
   flex: 1; /* Take remaining space in chat-container */
   gap: 30px;
+}
+
+.disclaimer-container {
+  position: absolute; /* or 'fixed' if you want it relative to the viewport */
+  bottom: 20px; /* Distance from the bottom */
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically within the container */
 }
 
 .central {
@@ -143,6 +170,15 @@ borderless:focus {
 
 .padding {
   padding: 12.5px 15px 12.5px 15px;
+}
+
+.centered {
+  text-align: center;
+}
+
+.bottom {
+  position: sticky;
+  bottom: 10px;
 }
 
 .primary-button {
