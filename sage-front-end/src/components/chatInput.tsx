@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import '../App.css';
-// import Send from '../assets/send.png'
-// import UserAvatar from '../assets/user-avatar.png'
-// import AiAvatar from '../assets/ai-avatar.png'
-// import chatSubmit from '../utils/chatSubmit';
+import Send from '../assets/message-circle.png'
+import chatSubmit from '../utils/chatSubmit';
 
 
 //React.FC stands for "React Functional Component." It is a type provided by the React library that defines the structure of a functional component.
@@ -18,8 +16,6 @@ const ChatInput = () => {
         if (inputValue.trim()) {
             // Add the new user message to the messages array
             setMessages(prevMessages => [...prevMessages, { text: inputValue, type: 'user' }]);
-            // Add a placeholder response from the chatbot
-            //setMessages(prevMessages => [...prevMessages, { text: "This is the chatbot's response.", type: 'bot' }]);
 
             // Prepare the query body
             const requestBody = {
@@ -50,39 +46,42 @@ const ChatInput = () => {
     };
 
     return (
-        <div className='chat-container'>
-            <div className="chat-messages">
-                    {messages.map((msg, index) => (
-                            <div key={index} className={`chat-message ${msg.type}`}>
-                                {msg.type === 'user' ? (
-                                    <div className='messenger-role'>
-                                        <img src={UserAvatar} alt="User Avatar" className='icon-med' />
-                                        <h3 className='avatar-text'>{msg.type}</h3>
-                                    </div>
-                                ) : (
-                                    <div className='messenger-role'>
-                                        <img src={AiAvatar} alt="AI Avatar" className='icon-med' />
-                                        <h3 className='avatar-text'>{msg.type}</h3>
-                                    </div>
-                                )}
-                                {msg.text}
-                            </div>
-                    ))}
+        <div className='chat-input-container'>
+            <div className='messages-area'>
+                {messages.map((msg, index) => (
+                <div key={index} className='message-row'>
+                    <div className={`chat-message ${msg.type}`}>
+                    {msg.text}
+                    </div>
+                </div>
+                ))}
             </div>
-            <div className='searchbar-container'>
-                <form onSubmit={handleSubmit} className="chat-input-form">
-                    <input
-                        type="text"
-                        placeholder="Type a message..."
-                        className="chat-input"
-                        value={inputValue}
+            <div className='chat-tile'>
+                <div className='grid-2col'>
+                    <img src={Send} alt="Send icon" className='icon'/>
+                    <form onSubmit={handleSubmit}>
+                    <textarea 
+                        placeholder="Message Sage..." 
+                        className="medium-text borderless full-width" 
+                        value={inputValue} 
                         onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) { // Submit on Enter, but not Shift + Enter
+                                e.preventDefault(); // Prevent adding a new line
+                                handleSubmit(e); // Trigger form submission
+                            }
+                        }}
+                        rows={1}
                     />
-                    <button type="submit" className="button">
-                        <p className='button-text'>Send</p>
-                        <img src={Send} alt="Send icon" className='icon-send'/>
-                    </button>
-                </form>
+                    </form>
+                </div>
+                <div>
+                    <text className="medium-text light border padding">How do I set up a new savings account?</text>
+                    <text className="medium-text light border padding">How can I increase my daily transfer limit?</text>
+                    <text className="medium-text light border padding">I lost my card — how do I block it and get a replacement?</text>
+                    <text className="medium-text light border padding">Where can I find my BSB and account number?</text>
+                    <text className="medium-text light border padding">How do I set up Apple Pay or Google Pay with my CommBank card?</text>
+                </div>
             </div>
         </div>        
     );

@@ -303,7 +303,7 @@ class ChatResponse:
         messages = chat_prompt  
                 
         # Generate the completion  
-        completion = client.chat.completions.create(  
+        completion = client.chat.completions.create( 
             model="gpt-3.5-turbo",
             messages=messages,
             max_tokens=800,  
@@ -316,6 +316,7 @@ class ChatResponse:
         )
 
         response = json.loads(completion.model_dump_json())
+        print()
         query_response = response['choices'][0]['message']['content'].replace('\n', ' ').strip()
 
     

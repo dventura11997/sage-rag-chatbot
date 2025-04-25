@@ -62,6 +62,8 @@ def gen_query_response():
 
 
         response, relevant_titles = ChatResponse.query_response(query, company)
+        # response = "Dummy response"
+        # relevant_titles = "Dummy titles"
 
         return jsonify({"message": f"{response}", "relevant_documents": f"Documents used for response: {relevant_titles}"}), 200
     
