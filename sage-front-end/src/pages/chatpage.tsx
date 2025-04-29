@@ -1,9 +1,12 @@
 import '../App.css'
+import { useState } from 'react';
 import ChatInput from '../components/chatInput';
 import Sidebar from '../components/sidebar';
 import DateHeader from '../components/dateHeader';
 
 function ChatPage() {
+  const [sharedInputValue, setSharedInputValue] = useState("");
+
   return (
     <div>
         <section className='responsive-container'>
@@ -13,7 +16,7 @@ function ChatPage() {
             <div className='middle'>
               <div className='chat-container'>
                 <DateHeader/>
-                <ChatInput/>
+                <ChatInput initialInputValue={sharedInputValue} />
               </div>
             </div>
             <div className='right'></div>

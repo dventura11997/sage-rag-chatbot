@@ -2,7 +2,6 @@ import '../App.css'
 
 
 const DateHeader: React.FC = () => {
-    // Get the current date in AEST
     // Get the current date and time in AEST
     const currentDate = new Date().toLocaleDateString('en-AU', {
         timeZone: 'Australia/Sydney', // AEST timezone

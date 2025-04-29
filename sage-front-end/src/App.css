@@ -45,10 +45,6 @@ body {
     background-color: var(--fourth-col);
     height: 100vh;
     border-right: 1px solid #726D6A40;
-    /* Remove position: fixed, top, and left */
-    /* position: fixed; */
-    /* top: 0; */
-    /* left: 0; */
 }
 
 .chat-container {
@@ -115,7 +111,6 @@ h1 {
   font-family: var(--header-font);
   display: inline;
   margin: 0 0.5rem;
-
 }
 
 .primary-colour {
@@ -174,6 +169,14 @@ borderless:focus {
 
 .centered {
   text-align: center;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.no-bgd {
+  background: none;
 }
 
 .bottom {

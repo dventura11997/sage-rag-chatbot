@@ -22,12 +22,11 @@ function InfoPage() {
               <div className='info-container'>
                 <div className='header-container'>
                     <h1>What Would You Like To Know About</h1>
-                    <h1 className='primary-colour'>SAGE</h1>
+                    <h1 className='primary-colour'>Commonwealth Bank</h1>
                 </div>
                 <ChatTile 
                     inputValue={inputValue}
                     setInputValue={setInputValue}
-                    handleSubmit={handleSubmit}
                 />
                 <div className='disclaimer-container'>
                     <text className='medium-text centered'>
