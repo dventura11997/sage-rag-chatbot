@@ -4,14 +4,11 @@ import io
 import pandas as pd
 from PyPDF2 import PdfReader
 from azure.storage.blob import BlobServiceClient
-from sentence_transformers import SentenceTransformer
-import tiktoken
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings.openai import OpenAIEmbeddings
 from io import StringIO
 import faiss
 import openai
 import pickle
+import gc
 
 class ProcessPDFs:
     def ConnectAzure():
@@ -65,7 +62,7 @@ class ProcessPDFs:
 
         # Connect to Azure Blob Storage
         connect_str = "DefaultEndpointsProtocol=https;AccountName=devprojectsdb;AccountKey=vl7x6XrnS8Esycm9fFsXO/biKfHRyKWRXYuI9WcRb1r1xiMlRUQcipmsvUruJu3K5VHY1NjMbdyi+ASt1FaEhA==;EndpointSuffix=core.windows.net"
-        print(connect_str)
+        #print(connect_str)
         blob_service_client = BlobServiceClient.from_connection_string(connect_str)
         
         # Get the container client
@@ -78,7 +75,7 @@ class ProcessPDFs:
 
         for blob in blob_list:
             if blob.name.endswith('.pdf'):
-                print(f"Processing metadata for blob: {blob.name}")  # Print the blob name for debugging
+                #print(f"Processing metadata for blob: {blob.name}")  # Print the blob name for debugging
                 # Download the blob content
                 blob_client = container_client.get_blob_client(blob)
                 pdf_data = blob_client.download_blob().readall()
@@ -134,7 +131,7 @@ class ProcessPDFs:
                     {"role": "user", "content": f"Can you please provide a concise summary of the following text:\n\n{chunk}"}
                 ]
 
-                print(f"Processing summary with unchunked prompt for {row['title']}")
+                #print(f"Processing summary with unchunked prompt for {row['title']}")
                 # Include speech result if speech is enabled  
                 messages = chat_prompt  
                 
@@ -160,12 +157,12 @@ class ProcessPDFs:
             
             # Combine all chunk summaries
             full_summary = " ".join(summaries)
-            print(full_summary)
+            #print(full_summary)
         
             # Store the final summary in the DataFrame
             pdf_metadata_df.at[idx, 'summary'] = full_summary
 
-        print(pdf_metadata_df.head())
+        #print(pdf_metadata_df.head())
         pdf_metadata_df.drop(['text'], axis=1, inplace=True)
 
         # Save the file to a storage container
@@ -189,17 +186,38 @@ class ProcessPDFs:
         return pdf_metadata_df
     
     def store_to_vector_store(pdf_metadata_df, index_path="faiss_index", metadata_path="faiss_metadata.pkl"):
+        # Import the model only when needed to make memory more efficient
+        from sentence_transformers import SentenceTransformer
         # Load model
         model = SentenceTransformer("all-MiniLM-L6-v2")
 
-        # Get text column and encode
-        texts = pdf_metadata_df["text"].fillna("").tolist()
-        embeddings = model.encode(texts, convert_to_numpy=True)
+        # Process in smaller batches to manage memory
+        batch_size = 10
+        embeddings_list = []
+        
+        for i in range(0, len(pdf_metadata_df), batch_size):
+            batch_df = pdf_metadata_df.iloc[i:i+batch_size]
+            
+            # Get text column and encode for this batch
+            texts = batch_df["text"].fillna("").tolist()
+            batch_embeddings = model.encode(texts, convert_to_numpy=True)
+            
+            # Add to our list
+            for emb in batch_embeddings:
+                embeddings_list.append(emb)
+            
+            # Clean up
+            del batch_df, texts, batch_embeddings
+            gc.collect()
 
         # Create FAISS index
-        dim = embeddings[0].shape[0]
+        dim = embeddings_list[0].shape[0]
         index = faiss.IndexFlatL2(dim)
-        index.add(embeddings)
+        
+        # Convert list to numpy array and add to index
+        import numpy as np
+        embeddings_array = np.array(embeddings_list)
+        index.add(embeddings_array)
 
         # Save index to disk
         faiss.write_index(index, index_path)
@@ -208,8 +226,12 @@ class ProcessPDFs:
         metadata = pdf_metadata_df.drop(columns=["text"]).to_dict(orient="records")
         with open(metadata_path, "wb") as f:
             pickle.dump(metadata, f)
+            
+        # Clean up
+        del model, embeddings_list, embeddings_array, index, metadata
+        gc.collect()
 
-        print(f"Stored {len(texts)} PDFs in vector store.")
+        #print(f"Stored {len(pdf_metadata_df)} PDFs in vector store.")
 
 class ResponseHelpers:
     def generate_contextual_paragraph(company):
@@ -218,7 +240,7 @@ class ResponseHelpers:
 
         # Prepare the chat prompt
         chat_prompt = [
-            {"role": "user", "content": f"""Create a 4-6 line paragraph which is designed to provide context on a particular business, in this address the following questions for this business: {client}: 
+            {"role": "user", "content": f"""Create a 4-6 line paragraph which is designed to provide context on a particular business, in this address the following questions for this business: {company}: 
             What is the nature of the {company}? 
             What are the products and services being sold, as well as the mix for {company}?
             How long has the {company} existed, which industry, sector and geographical market do they operate within? 
@@ -241,7 +263,7 @@ class ResponseHelpers:
             stream=False
         )
 
-        print(f"Generating contextual paragraph for {company}")
+        #print(f"Generating contextual paragraph for {company}")
 
         response = json.loads(completion.to_json())
         contextual_paragraph = response['choices'][0]['message']['content']
@@ -253,37 +275,47 @@ class ResponseHelpers:
 
 class ChatResponse:
     def query_response(query, company):
+        # Load dependencies only when needed
+        from sentence_transformers import SentenceTransformer
+
         client = openai.OpenAI(api_key="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")
 
         contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
-        print(contextual_paragraph)
+        #print(contextual_paragraph)
         #select_relevant_pdfs(query, pdf_meta_sum)
 
         # Load FAISS index and metadata
-        index = faiss.read_index("faiss_index")
-        with open("faiss_metadata.pkl", "rb") as f:
-            metadata = pickle.load(f)
-        
-        # Load sentence transformer model for encoding query
-        model = SentenceTransformer("all-MiniLM-L6-v2")
-        query_embedding = model.encode([query])[0].reshape(1, -1)
-        
-        # Search for top 3 similar documents
-        k = 3
-        distances, indices = index.search(query_embedding, k)
-        
-        # Get relevant document information
-        relevant_docs = []
-        relevant_titles = []
-        for idx in indices[0]:
-            if idx < len(metadata):
-                doc_info = metadata[idx]
-                relevant_docs.append(doc_info)
-                relevant_titles.append(doc_info.get('title', ''))
-        
-        print(f"Relevant documents: {relevant_titles}")
-        relevant_titles = ', '.join(relevant_titles)
-        print(f"Relevant documents for message: {relevant_titles}")
+        try:
+            index = faiss.read_index("faiss_index")
+            with open("faiss_metadata.pkl", "rb") as f:
+                metadata = pickle.load(f)
+                
+            # Load sentence transformer model for encoding query
+            model = SentenceTransformer("all-MiniLM-L6-v2")
+            query_embedding = model.encode([query])[0].reshape(1, -1)
+            
+            # Search for top 3 similar documents
+            k = 3
+            distances, indices = index.search(query_embedding, k)
+            
+            # Get relevant document information
+            relevant_docs = []
+            relevant_titles = []
+            for idx in indices[0]:
+                if idx < len(metadata):
+                    doc_info = metadata[idx]
+                    relevant_docs.append(doc_info)
+                    relevant_titles.append(doc_info.get('title', ''))
+                    
+            # Clean up
+            del model, query_embedding
+            gc.collect()
+            
+            relevant_titles_str = ', '.join(relevant_titles)
+        except Exception as e:
+            print(f"Error loading FAISS index: {e}")
+            relevant_docs = []
+            relevant_titles_str = "No documents found"
 
         # Prepare chat prompt with context
         chat_prompt = [
@@ -298,7 +330,7 @@ class ChatResponse:
         ]
 
 
-        print(f"Responding to user query using {contextual_paragraph}")
+        #print(f"Responding to user query using {contextual_paragraph}")
         # Include speech result if speech is enabled  
         messages = chat_prompt  
                 
@@ -316,8 +348,11 @@ class ChatResponse:
         )
 
         response = json.loads(completion.model_dump_json())
-        print()
         query_response = response['choices'][0]['message']['content'].replace('\n', ' ').strip()
 
+        # Clean up
+        del completion, chat_prompt, contextual_paragraph
+        gc.collect()
+
     
-        return query_response, relevant_titles
+        return query_response, relevant_titles_str
