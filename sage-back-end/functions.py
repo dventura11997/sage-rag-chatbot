@@ -10,6 +10,7 @@ import openai
 import pickle
 import gc
 import logging
+from sentence_transformers import SentenceTransformer
 
 # Configure logging so it shows up in my Render dashboard
 logging.basicConfig(level=logging.INFO, 
@@ -194,7 +195,7 @@ class ProcessPDFs:
     
     def store_to_vector_store(pdf_metadata_df, index_path="faiss_index", metadata_path="faiss_metadata.pkl"):
         # Import the model only when needed to make memory more efficient
-        from sentence_transformers import SentenceTransformer
+        #from sentence_transformers import SentenceTransformer
         # Load model
         model = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -283,8 +284,8 @@ class ResponseHelpers:
 class ChatResponse:
     def query_response(query, company):
         # Load dependencies only when needed
-        logger.info(f"Importing Sentence Transformer")
-        from sentence_transformers import SentenceTransformer
+        # logger.info(f"Importing Sentence Transformer")
+        # from sentence_transformers import SentenceTransformer
 
         client = openai.OpenAI(api_key="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")
 
