@@ -283,10 +283,12 @@ class ResponseHelpers:
 class ChatResponse:
     def query_response(query, company):
         # Load dependencies only when needed
+        logger.info(f"Importing Sentence Transformer")
         from sentence_transformers import SentenceTransformer
 
         client = openai.OpenAI(api_key="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")
 
+        logger.info(f"Generating contextual paragraph")
         contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
         logger.info(f"Generated contextual paragraph with length: {len(contextual_paragraph)}")
 
