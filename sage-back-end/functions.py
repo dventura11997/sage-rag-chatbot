@@ -9,6 +9,13 @@ import faiss
 import openai
 import pickle
 import gc
+import logging
+
+# Configure logging so it shows up in my Render dashboard
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 
 class ProcessPDFs:
     def ConnectAzure():
@@ -281,18 +288,19 @@ class ChatResponse:
         client = openai.OpenAI(api_key="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")
 
         contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
-        #print(contextual_paragraph)
-        #select_relevant_pdfs(query, pdf_meta_sum)
+        logger.info(f"Generated contextual paragraph with length: {len(contextual_paragraph)}")
 
         # Load FAISS index and metadata
         try:
             index = faiss.read_index("faiss_index")
             with open("faiss_metadata.pkl", "rb") as f:
                 metadata = pickle.load(f)
+            logger.info("FAISS index and metadata loaded.")
                 
             # Load sentence transformer model for encoding query
             model = SentenceTransformer("all-MiniLM-L6-v2")
             query_embedding = model.encode([query])[0].reshape(1, -1)
+            logger.info("Query embedding generated.")
             
             # Search for top 3 similar documents
             k = 3
@@ -312,6 +320,8 @@ class ChatResponse:
             gc.collect()
             
             relevant_titles_str = ', '.join(relevant_titles)
+            logger.info(f"Top documents found: {relevant_titles_str}")
+
         except Exception as e:
             print(f"Error loading FAISS index: {e}")
             relevant_docs = []
@@ -330,10 +340,10 @@ class ChatResponse:
         ]
 
 
-        #print(f"Responding to user query using {contextual_paragraph}")
         # Include speech result if speech is enabled  
         messages = chat_prompt  
                 
+        logger.info(f"Sending prompt to OpenAI with length: {len(chat_prompt)}")
         # Generate the completion  
         completion = client.chat.completions.create( 
             model="gpt-3.5-turbo",
@@ -349,6 +359,8 @@ class ChatResponse:
 
         response = json.loads(completion.model_dump_json())
         query_response = response['choices'][0]['message']['content'].replace('\n', ' ').strip()
+
+        logger.info(f"Query processed with length: {len(query_response)}")
 
         # Clean up
         del completion, chat_prompt, contextual_paragraph
