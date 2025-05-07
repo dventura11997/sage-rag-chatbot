@@ -48,7 +48,7 @@ def test_connection():
         logger.error(f"Azure connection error: {str(e)}")
         return jsonify({"error": f"Connection error: {str(e)}"}), 500
 
-@app.route('/metadata', methods=['GET'])
+@app.route('/gen_meta', methods=['GET'])
 def gen_pdf_metadata():
     try:
         # Import only when needed
@@ -71,7 +71,7 @@ def gen_pdf_metadata():
         logger.error(f"Metadata generation error: {str(e)}")
         return jsonify({"error": f"Error generating metadata: {str(e)}"}), 500
 
-@app.route('/helpers', methods=['POST'])
+@app.route('/generate_company_context', methods=['POST'])
 def response_helpers():
     try:
         # Import only when needed
@@ -82,7 +82,8 @@ def response_helpers():
         company = request_body.get('company')
         
         logger.info(f"Generating contextual paragraph for company: {company}")
-        contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)   
+        contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
+        logger.info(f"Contextual paragraph generated for {company}")   
         
         # Force garbage collection
         gc.collect()

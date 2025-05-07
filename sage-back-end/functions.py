@@ -276,8 +276,22 @@ class ResponseHelpers:
         response = json.loads(completion.to_json())
         contextual_paragraph = response['choices'][0]['message']['content']
 
-        # print(completion.to_json())
-        #print(contextual_paragraph)
+        ### Add logic to save contextual_paragraph to a text file
+
+        # Save the file to a storage container
+        container_name = 'sage-pdf-docs'  
+        storage_acct_name = 'devprojectsdb'
+        file_name = 'company_context.txt'
+        connect_str = "DefaultEndpointsProtocol=https;AccountName=devprojectsdb;AccountKey=vl7x6XrnS8Esycm9fFsXO/biKfHRyKWRXYuI9WcRb1r1xiMlRUQcipmsvUruJu3K5VHY1NjMbdyi+ASt1FaEhA==;EndpointSuffix=core.windows.net"
+
+        # Create the text content
+        text_file = contextual_paragraph.encode('utf-8')
+
+        # Connect and upload text file 
+        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=file_name)
+
+        blob_client.upload_blob(text_file, overwrite=True)
 
         return contextual_paragraph
 
@@ -286,12 +300,24 @@ class ChatResponse:
         # Load dependencies only when needed
         # logger.info(f"Importing Sentence Transformer")
         # from sentence_transformers import SentenceTransformer
+        connect_str = "DefaultEndpointsProtocol=https;AccountName=devprojectsdb;AccountKey=vl7x6XrnS8Esycm9fFsXO/biKfHRyKWRXYuI9WcRb1r1xiMlRUQcipmsvUruJu3K5VHY1NjMbdyi+ASt1FaEhA==;EndpointSuffix=core.windows.net"
 
         client = openai.OpenAI(api_key="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")
 
-        logger.info(f"Generating contextual paragraph")
-        contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
-        logger.info(f"Generated contextual paragraph with length: {len(contextual_paragraph)}")
+        try:
+
+            logger.info(f"Accessing contextual paragraph from storage account")
+            #contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
+
+            # Read the file back from Azure Blob Storage
+            blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+            blob_client = blob_service_client.get_blob_client(container='sage-pdf-docs', blob='company_context.txt')
+            download_stream = blob_client.download_blob()
+            contextual_paragraph = download_stream.readall().decode('utf-8')
+            logger.info(f"Contextual paragraph with length: {len(contextual_paragraph)} accessed from storage account")
+        
+        except Exception as e:
+            logger.info(f"Error in accessing contextual paragraph: {e}")
 
         # Load FAISS index and metadata
         try:
