@@ -17,6 +17,8 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+index = faiss.read_index("faiss_index")
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 class ProcessPDFs:
     def ConnectAzure():
@@ -318,13 +320,13 @@ class ChatResponse:
 
         # Load FAISS index and metadata
         try:
-            index = faiss.read_index("faiss_index")
+            #index = faiss.read_index("faiss_index")
             with open("faiss_metadata.pkl", "rb") as f:
                 metadata = pickle.load(f)
             logger.info("FAISS index and metadata loaded.")
                 
             # Load sentence transformer model for encoding query
-            model = SentenceTransformer("all-MiniLM-L6-v2")
+            #model = SentenceTransformer("all-MiniLM-L6-v2")
             query_embedding = model.encode([query])[0].reshape(1, -1)
             logger.info("Query embedding generated.")
             
@@ -342,7 +344,7 @@ class ChatResponse:
                     relevant_titles.append(doc_info.get('title', ''))
                     
             # Clean up
-            del model, query_embedding
+            #del model, query_embedding
             gc.collect()
             
             relevant_titles_str = ', '.join(relevant_titles)
@@ -374,7 +376,7 @@ class ChatResponse:
         completion = client.chat.completions.create( 
             model="gpt-3.5-turbo",
             messages=messages,
-            max_tokens=800,  
+            max_tokens=500,  
             temperature=0.7,  
             top_p=0.95,  
             frequency_penalty=0,  
