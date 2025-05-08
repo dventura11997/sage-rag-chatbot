@@ -5,7 +5,7 @@ import Sidebar from '../components/sidebar';
 import DateHeader from '../components/dateHeader';
 
 function ChatPage() {
-  const [sharedInputValue, setSharedInputValue] = useState("");
+  const [sharedInputValue] = useState("");
 
   return (
     <div>

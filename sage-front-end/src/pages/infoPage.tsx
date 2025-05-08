@@ -5,12 +5,6 @@ import { useState } from 'react';
 
 function InfoPage() {
     const [inputValue, setInputValue] = useState("");
-    
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        console.log("Submitted:", inputValue);
-        setInputValue("");
-    };
 
   return (
     <div>

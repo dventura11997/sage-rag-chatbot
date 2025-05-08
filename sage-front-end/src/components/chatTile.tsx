@@ -10,7 +10,7 @@ interface RedirectState {
     page: any; // Define the type for the 'page' prop
   }
 
-const ChatTile: React.FC<ChatTileProps> = ({ inputValue, setInputValue }) => {
+const ChatTile: React.FC<ChatTileProps> = ({ setInputValue }) => {
     const [redirectTo, setRedirectTo] = useState<RedirectState | null>(null);
   
     useEffect(() => {

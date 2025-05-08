@@ -45,7 +45,7 @@ const ChatInput = ({ initialInputValue = "" }) => {
             };
 
             // Call the formSubmit utility function
-            const result = await chatSubmit('http://127.0.0.1:5000/chat_response', requestBody);
+            const result = await chatSubmit('https://sage-rag-chatbot.onrender.com/chat_response_basic', requestBody);
 
             if (result.success) {
                 // Add the chatbot's response to the messages array

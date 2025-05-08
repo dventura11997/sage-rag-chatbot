@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; 
+import { useState } from 'react'; 
 import '../App.css'
 import Navbar from '../components/navbar';
 import Redirect from '../utils/redirect';
