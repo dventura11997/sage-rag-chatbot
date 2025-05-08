@@ -121,6 +121,60 @@ def gen_query_response():
         logger.error(traceback.format_exc())
         return jsonify({'error': f'An error occurred: {str(e)}'}), 500
     
+@app.route('/chat_response_basic', methods=['POST'])
+def gen_query_response_basic():
+    try:
+        from azure.storage.blob import BlobServiceClient
+        import pandas as pd
+        from io import StringIO
+        from functions import ResponseHelpers, ProcessPDFs, ChatResponse
+
+        request_body = request.json
+
+        # Get query parameters from JSON Body
+        query = request_body.get('query')
+
+        # Azure Storage settings
+        container_name = 'sage-pdf-docs'
+        storage_acct_name = 'devprojectsdb'
+        file_name = 'pdf_metadata_df.csv'
+        connect_str = "DefaultEndpointsProtocol=https;AccountName=devprojectsdb;AccountKey=vl7x6XrnS8Esycm9fFsXO/biKfHRyKWRXYuI9WcRb1r1xiMlRUQcipmsvUruJu3K5VHY1NjMbdyi+ASt1FaEhA==;EndpointSuffix=core.windows.net"
+
+        # Connect to the blob
+        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=file_name)
+
+        pdf_folder_path = f"https://{storage_acct_name}.blob.core.windows.net/{container_name}/"
+
+        # Download the blob content
+        download_stream = blob_client.download_blob()
+        csv_content = download_stream.readall().decode('utf-8')
+
+        logger.info(f"Extracting data from PDFs")
+        pdf_metadata_df = ProcessPDFs.extract_data_multiple_pdfs()
+        logger.info(f"Extracted data from PDFs")
+        # Convert CSV content to DataFrame
+        logger.info(f"Reading summary CSV from storage account")
+        pdf_metadata_sum = pd.read_csv(StringIO(csv_content))
+        logger.info(f"Read summary CSV from storage account")
+
+        logger.info(f"Selecting Relevant PDFs")
+        relevant_pdfs = ResponseHelpers.select_relevant_pdfs(query, pdf_metadata_sum)
+        logger.info(f"Selected Relevant PDFs: {relevant_pdfs}")
+
+        logger.info(f"Generating Query Response")
+        query_response, formatted_relevant_pdf_titles = ChatResponse.query_response_basic(query, relevant_pdfs, pdf_metadata_sum, pdf_metadata_df)
+        logger.info(f"Query response generated with length: {len(query_response)}")
+
+        return jsonify({"message": f"{query_response}", "relevant_documents": f"Documents used for response: {formatted_relevant_pdf_titles}"}), 200
+    
+    except Exception as e:
+        # Log the full traceback
+        import traceback
+        logger.error(f"Query response error: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': f'An error occurred: {str(e)}'}), 500
+    
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy"}), 200

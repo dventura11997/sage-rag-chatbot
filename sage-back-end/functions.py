@@ -5,20 +5,20 @@ import pandas as pd
 from PyPDF2 import PdfReader
 from azure.storage.blob import BlobServiceClient
 from io import StringIO
-import faiss
+#import faiss
 import openai
-import pickle
+#import pickle
 import gc
 import logging
-from sentence_transformers import SentenceTransformer
+#from sentence_transformers import SentenceTransformer
 
 # Configure logging so it shows up in my Render dashboard
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-index = faiss.read_index("faiss_index")
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# index = faiss.read_index("faiss_index")
+# model = SentenceTransformer("all-MiniLM-L6-v2")
 
 class ProcessPDFs:
     def ConnectAzure():
@@ -244,6 +244,45 @@ class ProcessPDFs:
         #print(f"Stored {len(pdf_metadata_df)} PDFs in vector store.")
 
 class ResponseHelpers:
+    def select_relevant_pdfs(query, pdf_metadata_sum):
+        client = openai.OpenAI(api_key="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")
+
+        # Prepare the chat prompt
+        chat_prompt = []
+
+        # Iterate over each row in the dataframe to get the specific summary and title
+        for index, row in pdf_metadata_sum.iterrows():
+            summary = row['summary']
+            title = row['title']
+            chat_prompt.append({"role": "user", "content": f"Summary: {summary}\nTitle: {title}"})
+
+        # Add the user query to the prompt
+        chat_prompt.append({"role": "user", "content": f"""Based on the above summaries, which titles are relevant to the user query: {query}? 
+                            Please return the response as a list, with a maximum of 3 relevant PDF titles, in an object like so: ['relevant_pdf_title_1', 'relevant_pdf_title_2', "..."]"""})
+        messages = chat_prompt 
+        print(f"Selecting the relevant documents based on the summary")
+            
+        # Generate the completion  
+        completion = client.chat.completions.create(  
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=800,  
+            temperature=0.7,  
+            top_p=0.95,  
+            frequency_penalty=0,  
+            presence_penalty=0,
+            stop=None,  
+            stream=False
+        )
+            
+        response = json.loads(completion.to_json())
+        print(response)
+        # Extract the summary from the completion response
+        relevant_pdfs = response['choices'][0]['message']['content']
+        print(response)
+            
+        return relevant_pdfs
+    
     def generate_contextual_paragraph(company):
         # Connect OpenAI client:
         client = openai.OpenAI(api_key="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")
@@ -396,3 +435,83 @@ class ChatResponse:
 
     
         return query_response, relevant_titles_str
+    
+    def query_response_basic(query, relevant_pdfs, pdf_metadata_sum, pdf_metadata_df):
+        connect_str = "DefaultEndpointsProtocol=https;AccountName=devprojectsdb;AccountKey=vl7x6XrnS8Esycm9fFsXO/biKfHRyKWRXYuI9WcRb1r1xiMlRUQcipmsvUruJu3K5VHY1NjMbdyi+ASt1FaEhA==;EndpointSuffix=core.windows.net"
+
+        client = openai.OpenAI(api_key="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")
+               
+        try:
+
+            logger.info(f"Accessing contextual paragraph from storage account")
+            #contextual_paragraph = ResponseHelpers.generate_contextual_paragraph(company)
+
+            # Read the file back from Azure Blob Storage
+            blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+            blob_client = blob_service_client.get_blob_client(container='sage-pdf-docs', blob='company_context.txt')
+            download_stream = blob_client.download_blob()
+            contextual_paragraph = download_stream.readall().decode('utf-8')
+            logger.info(f"Contextual paragraph with length: {len(contextual_paragraph)} accessed from storage account")
+        
+        except Exception as e:
+            logger.info(f"Error in accessing contextual paragraph: {e}")
+
+        
+        print(f"Relevant PDFs: {relevant_pdfs}")
+
+        # Merge the two DataFrames on the 'title' column
+        merged_df = pd.merge(pdf_metadata_df, pdf_metadata_sum[['title', 'summary']], on='title', how='inner')
+
+        # Ensure relevant_pdfs is a list
+        if isinstance(relevant_pdfs, str):
+            # If it's a string, convert it to a list
+            relevant_pdfs = [relevant_pdfs]
+
+        # Filter the merged DataFrame to find relevant entries
+        relevant_df = merged_df[merged_df['title'].isin(relevant_pdfs)]
+
+        # Prepare the chat prompt
+        chat_prompt = [
+            {"role": "user", "content": f"""Please create a concise and relevant 3-4 sentence response to the user query: "{query}". 
+            Use the following context about the company: {contextual_paragraph} and the relevant documents.
+            Ensure the response is directly related to the query and does not include unnecessary information.
+            Ensure the response is textual with full sentences.
+            Do not respond to the query as if its an email with any sign-off, title or email signature.
+            Please ensure there are no forward or backslashes in the response. Or any new line syntax (such as "\\n" or "\\n1")."""}
+        ]
+
+        for index, row in relevant_df.iterrows():
+            summary = row['summary']
+            title = row['title']
+            text = row['text']
+            chat_prompt.append({"role": "user", "content": f"Summary: {summary}\nTitle: {title}, Text: {text}"})
+
+
+
+        print(f"Responding to user query using: {relevant_pdfs} and {contextual_paragraph}")
+        # Include speech result if speech is enabled  
+        messages = chat_prompt  
+                
+        # Generate the completion  
+        completion = client.chat.completions.create(  
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=800,  
+            temperature=0.7,  
+            top_p=0.95,  
+            frequency_penalty=0,  
+            presence_penalty=0,
+            stop=None,  
+            stream=False
+        )
+
+        json_response = json.loads(completion.to_json())
+        query_response = json_response['choices'][0]['message']['content'] 
+
+        query_response = query_response.replace('\n', ' ').replace('\\n', ' ').strip()
+        # Convert the list to a comma-separated string
+        formatted_relevant_pdf_titles = ', '.join(relevant_pdfs)
+        formatted_relevant_pdf_titles = formatted_relevant_pdf_titles.strip('[]')
+
+        print(query_response)
+        return query_response, formatted_relevant_pdf_titles
