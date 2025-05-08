@@ -17,7 +17,12 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = "hello"
 
-CORS(app, origins=["https://sage-chat-bot.netlify.app"])
+CORS(app, 
+     origins=["https://sage-chat-bot.netlify.app"],
+     methods=["GET", "POST", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization"],
+     supports_credentials=True)
+
 
 @app.route('/test', methods=['GET'])
 def test():
