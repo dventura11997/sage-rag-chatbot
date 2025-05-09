@@ -124,7 +124,7 @@ class ProcessPDFs:
     # Function to generate PDF summaries
     def generate_pdf_summaries(pdf_metadata_df):
         # Initialize the OpenAI client (you can also set OPENAI_API_KEY in env vars)
-        client = openai.OpenAI(api_key="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")
+        client = openai.OpenAI(api_key="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")
 
         for idx, row in pdf_metadata_df.iterrows():
             
@@ -245,7 +245,7 @@ class ProcessPDFs:
 
 class ResponseHelpers:
     def select_relevant_pdfs(query, pdf_metadata_sum):
-        client = openai.OpenAI(api_key="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")
+        client = openai.OpenAI(api_key="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")
 
         # Prepare the chat prompt
         chat_prompt = []
@@ -285,7 +285,7 @@ class ResponseHelpers:
     
     def generate_contextual_paragraph(company):
         # Connect OpenAI client:
-        client = openai.OpenAI(api_key="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")
+        client = openai.OpenAI(api_key="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")
 
         # Prepare the chat prompt
         chat_prompt = [
@@ -340,7 +340,7 @@ class ChatResponse:
     def query_response(query, company):
         connect_str = "DefaultEndpointsProtocol=https;AccountName=devprojectsdb;AccountKey=vl7x6XrnS8Esycm9fFsXO/biKfHRyKWRXYuI9WcRb1r1xiMlRUQcipmsvUruJu3K5VHY1NjMbdyi+ASt1FaEhA==;EndpointSuffix=core.windows.net"
 
-        client = openai.OpenAI(api_key="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")
+        client = openai.OpenAI(api_key="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")
 
         try:
 
@@ -439,7 +439,7 @@ class ChatResponse:
     def query_response_basic(query, relevant_pdfs, pdf_metadata_sum, pdf_metadata_df):
         connect_str = "DefaultEndpointsProtocol=https;AccountName=devprojectsdb;AccountKey=vl7x6XrnS8Esycm9fFsXO/biKfHRyKWRXYuI9WcRb1r1xiMlRUQcipmsvUruJu3K5VHY1NjMbdyi+ASt1FaEhA==;EndpointSuffix=core.windows.net"
 
-        client = openai.OpenAI(api_key="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")
+        client = openai.OpenAI(api_key="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")
                
         try:
 
